@@ -27,6 +27,15 @@ import { ElementCard } from './components/ElementCard';
 import { Leaderboard } from './components/Leaderboard';
 import { LobbySetup } from './components/LobbySetup';
 
+function getHubUrl(): string {
+  if (typeof window === 'undefined') return 'http://localhost:19000';
+  const proto = window.location.protocol === 'https:' ? 'https:' : 'http:';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:19000';
+  }
+  return `${proto}//kbs-cloud.com`;
+}
+
 export default function App() {
   const [playOnline, setPlayOnline] = useState<boolean>(() => localStorage.getItem('alchemist_play_online') !== 'false');
   const [user, setUser] = useState<any>(null);
@@ -546,9 +555,23 @@ export default function App() {
               <option value="offline">OFFLINE</option>
             </select>
           </div>
-          {currentGameId && (
+          {!currentGameId ? (
+            <a 
+              href={getHubUrl()} 
+              className="header-btn-back" 
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              HUB CATALOG
+            </a>
+          ) : (
             <button 
-              onClick={() => { setCurrentGameId(null); setCurrentGame(null); loadGames(); }}
+              onClick={() => {
+                if (confirm("Decommission this crucible view and return to active laboratories?")) {
+                  setCurrentGameId(null);
+                  setCurrentGame(null);
+                  loadGames();
+                }
+              }}
               className="header-btn-back"
             >
               ← RETURN TO LAB
@@ -599,15 +622,28 @@ export default function App() {
                 <option value="offline">OFFLINE</option>
               </select>
             </div>
-            {currentGameId && (
+            {!currentGameId ? (
+              <div className="mobile-drawer-row">
+                <span>HUB:</span>
+                <a 
+                  href={getHubUrl()} 
+                  className="header-btn-back"
+                  style={{ textDecoration: 'none' }}
+                >
+                  HUB CATALOG
+                </a>
+              </div>
+            ) : (
               <div className="mobile-drawer-row">
                 <span>ACTIVE SESSION:</span>
                 <button 
                   onClick={() => {
-                    setCurrentGameId(null);
-                    setCurrentGame(null);
-                    loadGames();
-                    setMobileMenuOpen(false);
+                    if (confirm("Decommission this crucible view and return to active laboratories?")) {
+                      setCurrentGameId(null);
+                      setCurrentGame(null);
+                      loadGames();
+                      setMobileMenuOpen(false);
+                    }
                   }}
                   className="header-btn-back"
                 >
