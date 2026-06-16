@@ -1,0 +1,29 @@
+{
+  "name": "alchemists-crucible",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.cjs",
+  "scripts": {
+    "dev": "npx tsc src/game/gameState.ts --outDir src/game/dist --module commonjs --target es2022 --moduleResolution node --noEmit false --esModuleInterop --ignoreConfig --ignoreDeprecations 6.0 && concurrently \"node server.cjs\" \"vite\"",
+    "build": "npx tsc src/game/gameState.ts --outDir src/game/dist --module commonjs --target es2022 --moduleResolution node --noEmit false --esModuleInterop --ignoreConfig --ignoreDeprecations 6.0 && vite build"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "lucide-react": "^1.17.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^10.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12"
+  }
+}
