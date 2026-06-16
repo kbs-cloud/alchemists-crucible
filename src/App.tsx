@@ -16,6 +16,7 @@ import {
 import { ELEMENTS, GameState, isPlayerVacant } from './game/gameState';
 import { apiFetch, isOnlineMode } from './services/api';
 import { authService, gameService } from './services';
+import { startSSOBackgroundCheck, redirectToSSO } from './shared/auth/sso-helper';
 
 // Subcomponents
 import { AuthScreen } from './components/AuthScreen';
@@ -86,6 +87,7 @@ export default function App() {
     localStorage.setItem('alchemist_play_online', playOnline ? 'true' : 'false');
 
     let active = true;
+    let cleanupBackgroundCheck: (() => void) | null = null;
 
     authService.checkSession().then(async (u) => {
       if (!active) return;
@@ -100,67 +102,9 @@ export default function App() {
           ssoCheckedRef.current = true;
           setLoaderText('CONNECTING TO CENTRAL SSO DIRECTORY...');
           
-          const isPackaged = typeof window !== 'undefined' && 
-                             (window.location.protocol === 'file:' || 
-                              navigator.userAgent.toLowerCase().includes('electron'));
-          if (isPackaged) {
-            setAuthLoading(false);
-            return;
-          }
-
-          const localBackend = window.location.origin;
-          const redirectUri = `${localBackend}/api/auth/callback?source=iframe`;
-          
-          const getAuthServer = () => {
-            if (import.meta.env.VITE_AUTH_SERVER_URL) {
-              return import.meta.env.VITE_AUTH_SERVER_URL;
-            }
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-              const port = window.location.port;
-              if (port === '28004' || port === '29004') {
-                return 'http://localhost:28001';
-              }
-            }
-            return `${window.location.protocol}//auth.kbs-cloud.com`;
-          };
-
-          const authorizeUrl = `${getAuthServer()}/api/auth/authorize?client_id=alchemist&redirect_uri=${encodeURIComponent(redirectUri)}`;
-          
-          const iframe = document.createElement('iframe');
-          iframe.src = authorizeUrl;
-          iframe.style.display = 'none';
-          document.body.appendChild(iframe);
-
-          let cleanedUp = false;
-          
-          const cleanup = () => {
-            if (cleanedUp) return;
-            cleanedUp = true;
-            window.removeEventListener('message', handleMessage);
-            if (iframe.parentNode) {
-              iframe.parentNode.removeChild(iframe);
-            }
-          };
-
-          const timeoutId = setTimeout(() => {
-            if (!active) return;
-            cleanup();
-            setAuthLoading(false);
-            
-            const params = new URLSearchParams(window.location.search);
-            const error = params.get('error');
-            if (error) {
-              setAuthError(error === 'session_fail' ? 'Session establishment failed.' : error);
-              window.history.replaceState(null, '', window.location.pathname);
-            }
-          }, 3000);
-
-          const handleMessage = async (event: MessageEvent) => {
-            if (!active) return;
-            if (event.origin !== window.location.origin) return;
-            if (event.data && event.data.type === 'SSO_LOGIN_SUCCESS') {
-              clearTimeout(timeoutId);
-              cleanup();
+          cleanupBackgroundCheck = startSSOBackgroundCheck({
+            clientId: 'alchemist',
+            onSuccess: async () => {
               try {
                 const uData = await authService.checkSession();
                 if (uData && active) {
@@ -174,10 +118,19 @@ export default function App() {
                   setAuthLoading(false);
                 }
               }
+            },
+            onFinished: () => {
+              if (active) {
+                setAuthLoading(false);
+                const params = new URLSearchParams(window.location.search);
+                const error = params.get('error');
+                if (error) {
+                  setAuthError(error === 'session_fail' ? 'Session establishment failed.' : error);
+                  window.history.replaceState(null, '', window.location.pathname);
+                }
+              }
             }
-          };
-
-          window.addEventListener('message', handleMessage);
+          });
         } else {
           setAuthLoading(false);
           const params = new URLSearchParams(window.location.search);
@@ -198,6 +151,9 @@ export default function App() {
     return () => {
       active = false;
       ssoCheckedRef.current = false;
+      if (cleanupBackgroundCheck) {
+        cleanupBackgroundCheck();
+      }
     };
   }, [playOnline]);
 
@@ -330,32 +286,13 @@ export default function App() {
                        (window.location.protocol === 'file:' || 
                         navigator.userAgent.toLowerCase().includes('electron'));
     
-    const localBackend = isPackaged ? 'http://localhost:29004' : window.location.origin;
-    const redirectUri = `${localBackend}/api/auth/callback`;
- 
-    const getAuthServer = () => {
-      if (import.meta.env.VITE_AUTH_SERVER_URL) {
-        return import.meta.env.VITE_AUTH_SERVER_URL;
-      }
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        const port = window.location.port;
-        if (port === '28004' || port === '29004') {
-          return 'http://localhost:28001';
-        }
-      }
-      return `${window.location.protocol}//auth.kbs-cloud.com`;
-    };
-
-    let authorizeUrl = `${getAuthServer()}/api/auth/authorize?client_id=alchemist&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
     if (isPackaged) {
       const token = Math.random().toString(36).substring(2, 15);
       localStorage.setItem('alchemist_auth_pending_token', token);
-      authorizeUrl += `&state=${encodeURIComponent(`source=electron&token=${token}`)}`;
-      window.open(authorizeUrl, '_blank');
+      redirectToSSO('alchemist', `source=electron&token=${token}`);
       setIsGooglePolling(true);
     } else {
-      window.location.href = authorizeUrl;
+      redirectToSSO('alchemist');
     }
   };
 

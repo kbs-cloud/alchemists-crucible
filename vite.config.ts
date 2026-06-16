@@ -14,6 +14,9 @@ try {
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    preserveSymlinks: true
+  },
   server: {
     host: '0.0.0.0',
     port: process.env.FRONTEND_PORT ? parseInt(process.env.FRONTEND_PORT, 10) : 28004,

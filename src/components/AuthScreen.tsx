@@ -1,50 +1,41 @@
 import React from 'react';
 import { Flame } from 'lucide-react';
+import { SSOLoginPanel } from '../shared/auth/SSOLoginPanel';
 
 interface AuthScreenProps {
   authError: string;
   redirectToAuth: () => void;
   playOnline: boolean;
   setPlayOnline: (v: boolean) => void;
+  isGooglePolling?: boolean;
+  onCancelGooglePoll?: () => void;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ authError, redirectToAuth, playOnline, setPlayOnline }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({
+  authError,
+  redirectToAuth,
+  playOnline,
+  setPlayOnline,
+  isGooglePolling = false,
+  onCancelGooglePoll = () => {}
+}) => {
   return (
-    <div className="auth-container">
-      <div className="lab-grid" />
-      <div className="glass-panel glass-panel-neon-purple auth-card">
-        <div className="auth-header">
-          <Flame className="auth-icon" />
-          <h1 className="auth-title">ALCHEMIST'S CRUCIBLE</h1>
-          <p className="auth-subtitle">Transmutation Matrix Node</p>
-        </div>
-
-        {authError && (
-          <div className="auth-error-banner">
-            [ERROR] {authError}
-          </div>
-        )}
-
-        <p className="auth-desc">
-          Connect to the central KBS Cloud SSO directory to authorize alchemical matrix transmutations.
-        </p>
-
-        <button onClick={redirectToAuth} className="btn-sci-fi btn-sci-fi-gold auth-btn-login">
-          ESTABLISH COMMAND CONNECTION
-        </button>
-
-        <div className="auth-offline-toggle">
-          <label className="auth-offline-label">
-            <input 
-              type="checkbox" 
-              checked={!playOnline} 
-              onChange={() => setPlayOnline(!playOnline)} 
-              className="auth-offline-checkbox"
-            />
-            PLAY OFFLINE / LOCAL MODE
-          </label>
-        </div>
-      </div>
-    </div>
+    <SSOLoginPanel
+      title="ALCHEMIST'S CRUCIBLE"
+      subtitle="Transmutation Matrix Node"
+      authError={authError}
+      buttonText="ESTABLISH COMMAND CONNECTION"
+      isGooglePolling={isGooglePolling}
+      playOnline={playOnline}
+      onPlayOnlineChange={setPlayOnline}
+      onLoginClick={redirectToAuth}
+      onCancelGooglePoll={onCancelGooglePoll}
+      themeColor="#9d4edf" // Purple theme color
+      icon={<Flame style={{ width: '48px', height: '48px' }} />}
+      containerClassName="auth-container"
+      cardClassName="glass-panel glass-panel-neon-purple auth-card"
+      buttonClassName="btn-sci-fi btn-sci-fi-gold auth-btn-login"
+      bgElement={<div className="lab-grid" />}
+    />
   );
 };
