@@ -32,7 +32,6 @@ export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({
             <label className="form-label">Reactor Core Name</label>
             <input 
               type="text" 
-              required
               placeholder="e.g. Arcane Crucible"
               className="terminal-input"
               value={createGameName}

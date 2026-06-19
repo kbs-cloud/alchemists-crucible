@@ -271,7 +271,6 @@ export default function App() {
 
   const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createGameName) return;
     try {
       const data = await gameService.createGame(createGameName, maxPlayers, maxTicks);
       if (data.success) {
